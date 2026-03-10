@@ -1,0 +1,54 @@
+# Retrieve Devices from Magenta IoT Hub
+
+### Get all device types
+GET https://iothub.magenta.at:443/api/device/types
+Accept: application/json
+X-Authorization: Bearer {{$dotenv IOTHUB_TOKEN}}
+
+
+### GET all devices of the current user
+GET https://iothub.magenta.at:443/api/deviceInfos/all?page=0&pageSize=100
+Accept: application/json
+X-Authorization: Bearer {{$dotenv IOTHUB_TOKEN}}
+
+
+### GET all IndoorAirQuality devices 
+GET https://iothub.magenta.at:443/api/deviceInfos/all?page=0&pageSize=100&textSearch=IndoorAirQuality
+Accept: application/json
+X-Authorization: Bearer {{$dotenv IOTHUB_TOKEN}}
+
+
+### GET specific IndoorAirQuality device
+GET https://iothub.magenta.at:443/api/deviceInfos/all?page=0&pageSize=100&textSearch=A5.18
+Accept: application/json
+X-Authorization: Bearer {{$dotenv IOTHUB_TOKEN}}
+
+# returns the device-ID for the subsequent requests /data[1]/id/id
+
+
+### Retrieve Data Keys of one specific device
+GET https://iothub.magenta.at:443/api/plugins/telemetry/DEVICE/{{$dotenv IOTHUB_DEVICE_ID}}/keys/timeseries
+accept: application/json
+X-Authorization: Bearer {{$dotenv IOTHUB_TOKEN}}
+
+
+### Retrieve Latest Data Value
+GET https://iothub.magenta.at:443/api/plugins/telemetry/DEVICE/{{$dotenv IOTHUB_DEVICE_ID}}/values/timeseries
+accept: application/json
+X-Authorization: Bearer {{$dotenv IOTHUB_TOKEN}}
+
+
+
+### Retrieve Latest Temperature, Humidity, CO2 and Pressure Values
+GET https://iothub.magenta.at:443/api/plugins/telemetry/DEVICE/{{$dotenv IOTHUB_DEVICE_ID}}/values/timeseries?keys=Temperature_avg,Humidity_avg,CO2_avg,Pressure_avg&useStrictDataTypes=true
+accept: application/json
+X-Authorization: Bearer {{$dotenv IOTHUB_TOKEN}}
+
+
+
+
+### Retrieve Data Values
+GET https://iothub.magenta.at:443/api/plugins/telemetry/DEVICE/{{$dotenv IOTHUB_DEVICE_ID}}/values/timeseries?startTs=1717760400&endTs=1717760480&limit=10000&agg=NONE
+accept: application/json
+X-Authorization: Bearer {{$dotenv IOTHUB_TOKEN}}
+

@@ -1,0 +1,146 @@
+services:
+  # NGSI-Proxy integrates Magenta IoT-Hub with the FIWARE ecosystem
+  ngsi-proxy:
+    labels:
+      org.fiware: 'IndoorAirQuality'
+    build: ngsi_proxy/
+    environment:
+      - LOGGING_LEVEL=INFO
+      - INTERVAL_SECONDS=60
+      - IOTHUB_USERNAME=${IOTHUB_USERNAME}
+      - IOTHUB_PASSWORD=${IOTHUB_PASSWORD}
+      - IOTHUB_BASE_URL=${IOTHUB_BASE_URL}
+      - ORION_BASE_URL=http://orion:${ORION_PORT}
+      - QUANTUMLEAP_BASE_URL=http://quantumleap:${QUANTUMLEAP_PORT}
+    hostname: ngsi-proxy
+    depends_on:
+      - orion
+      - quantumleap
+    networks:
+      - default
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+    volumes:
+      - "./Sensors.csv:/app/Sensors.csv"
+    healthcheck:
+      test: curl --fail -s http://ngsi-proxy:3001/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+  # Orion is an NGSI-v2 context broker
+  orion:
+    labels:
+      org.fiware: 'IndoorAirQuality'
+    image: fiware/orion-ld:latest
+    hostname: orion
+    depends_on:
+      - mongo-db
+    networks:
+      - default
+    ports:
+      - "${ORION_PORT}:${ORION_PORT}"
+#    environment:
+#      - ORION_MONGO_URI=mongodb://mongo-db:${MONGO_DB_PORT}
+#      - ORION_LOG_LEVEL=DEBUG
+#      - ORION_PORT=1026
+    restart: on-failure
+    command: -dbhost mongo-db -logLevel INFO
+    healthcheck:
+      test: curl --fail -s http://orion:${ORION_PORT}/version || exit 1
+      interval: 5s
+
+
+  # Quantum Leap is persisting Short Term History to Crate-DB
+  quantumleap:
+    image: orchestracities/quantumleap:latest
+    labels:
+      org.fiware: 'IndoorAirQuality'
+    hostname: quantumleap
+    ports:
+      - "${QUANTUMLEAP_PORT}:${QUANTUMLEAP_PORT}"
+    depends_on:
+      - crate-db
+    environment:
+      - CRATE_HOST=crate-db
+      - LOGLEVEL=INFO
+    restart: on-failure
+    healthcheck:
+      test: curl --fail -s http://quantumleap:${QUANTUMLEAP_PORT}/version || exit 1
+      interval: 5s
+  
+
+
+  # Databases:
+  # MongoDB is used by Orion Context Broker
+  mongo-db:
+    labels:
+      org.fiware: 'IndoorAirQuality'
+    image: mongo:5.0
+    hostname: mongo-db
+    ports:
+      - "${MONGO_DB_PORT}:${MONGO_DB_PORT}"
+    networks:
+      - default
+    command: --dbpath /data/db --nojournal
+    volumes:
+      - mongo-db:/data/db
+    healthcheck:
+      test: ["CMD","mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+
+  # CrateDB is a distributed SQL database
+  crate-db:
+    labels:
+      org.fiware: 'IndoorAirQuality'
+    image: crate:4.8.1
+    build: crate/
+    hostname: crate-db
+    ports:
+      # Admin UI
+      - "4200:4200"
+      # Transport protocol
+      - "4300:4300"
+      # PostgreSQL compatible interface
+      - "5432:5432"
+    command: crate -Cauth.host_based.enabled=false  -Ccluster.name=democluster -Chttp.cors.enabled=true -Chttp.cors.allow-origin="*" -Cdiscovery.type=single-node
+    environment:
+      - CRATE_HEAP_SIZE=2g # see https://crate.io/docs/crate/howtos/en/latest/deployment/containers/docker.html#troubleshooting
+    volumes:
+      - crate-db:/data
+
+
+  # Other services
+  # Grafana is used to visualize data
+  grafana:
+    labels:
+      org.fiware: 'IndoorAirQuality'
+    image: grafana/grafana
+    depends_on:
+      - crate-db
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_INSTALL_PLUGINS=orchestracities-map-panel,grafana-clock-panel,grafana-worldmap-panel
+    volumes:
+      - grafana:/var/lib/grafana
+      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ./grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+ 
+
+
+networks:
+  default:
+
+
+volumes:
+  mongo-db: ~
+  crate-db: ~
+  grafana: ~

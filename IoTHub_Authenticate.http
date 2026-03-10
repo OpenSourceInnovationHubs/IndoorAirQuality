@@ -1,0 +1,38 @@
+# Magenta IoT Hub API
+#
+# docs see: https://iothub.magenta.at/swagger-ui.html?setAccessToken=false
+#
+# Created a normal TENANT user with the following roles: user, notification_receiver
+# ATTENTION: put username and password in a .env file (outside a repo)
+
+
+### Login
+# Will receive a JWT token which has to be used in the further requests as X-Authorization header
+# docs see: https://iothub.magenta.at/swagger-ui/#/login-endpoint/loginPost
+POST https://iothub.magenta.at:443/api/auth/login
+Accept: application/json
+Content-Type: application/json
+
+{
+  "username": "{{$dotenv IOTHUB_USERNAME}}",
+  "password": "{{$dotenv IOTHUB_PASSWORD}}"
+}
+
+# Current Response (replace when new token was created):
+# X-Authorization: Bearer xyz...
+# Copy the value into the .env file using IOTHUB_TOKEN
+
+### Get Current User
+# Just to check if the user is logged in
+# docs see: https://iothub.magenta.at/swagger-ui/#/auth-controller/getUserUsingGET
+GET https://iothub.magenta.at:443/api/auth/user
+Accept: application/json
+X-Authorization: Bearer {{$dotenv IOTHUB_TOKEN}}
+
+
+### Logout
+# Will invalidate the JWT token
+# docs see https://iothub.magenta.at/swagger-ui/#/auth-controller/logoutUsingPOST
+POST https://iothub.magenta.at:443/api/auth/logout
+Accept: application/json
+X-Authorization: Bearer {{$dotenv IOTHUB_TOKEN}}

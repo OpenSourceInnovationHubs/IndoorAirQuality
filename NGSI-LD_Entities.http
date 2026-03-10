@@ -1,0 +1,140 @@
+### Check connection to Orion context-broker
+curl -iX GET http://localhost:1026/version
+
+### Create Entities
+# done in app.py create
+
+
+### Query all Entities
+curl -iX GET 'http://localhost:1026/ngsi-ld/v1/entities?local=true' \
+    | jq '.'
+
+
+### Query Sensor Entities
+curl -iX GET 'http://localhost:1026/ngsi-ld/v1/entities?type=IndoorEnvironmentObserved' \
+    | jq '.'
+
+
+### Delete all Entities
+curl -iX DELETE 'http://localhost:1026/ngsi-ld/v1/entities?type=IndoorEnvironmentObserved'
+
+
+### Create a new attribute
+curl -iX POST 'http://localhost:1026/ngsi-ld/v1/entities' \
+  --header 'Content-Type: application/ld+json' \
+  --data '{
+      "id": "urn:ngsi-ld:IndoorEnvironmentObserved:A5.18",
+      "type": "IndoorEnvironmentObserved",
+      "temperature": {
+        "value": 26.2,
+        "observedAt": "2024-10-14T08:00:00Z"
+      },
+      "relativeHumidity": {
+        "value": 42,
+        "observedAt": "2024-10-14T08:00:00Z"
+      },
+      "co2": {
+        "value": 656,
+        "observedAt": "2024-10-14T08:00:00Z"
+      },
+      "atmosphericPressure": {
+        "value": 995,
+        "observedAt": "2024-10-14T08:00:00Z"
+      },
+      "@context": [
+          "https://smartdatamodels.org/context.jsonld"
+      ]      
+    }'
+
+
+### Update (or create) attribute by key
+curl -iX POST 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:IndoorEnvironmentObserved:A5.18/attrs' \
+  --header 'Content-Type: application/ld+json' \
+  --data '{
+      "temperature": {
+        "value": 22.6,
+        "observedAt": "2024-10-14T09:00:00Z"
+      },
+      "relativeHumidity": {
+        "value": 46,
+        "observedAt": "2024-10-14T09:00:00Z"
+      },
+      "co2": {
+        "value": 665,
+        "observedAt": "2024-10-14T09:00:00Z"
+      },
+      "atmosphericPressure": {
+        "value": 992,
+        "observedAt": "2024-10-14T09:00:00Z"
+      },
+      "@context": [
+          "https://smartdatamodels.org/context.jsonld"
+      ]      
+    }'
+
+### Check to see the new attributes
+curl -X GET 'http://localhost:1026/ngsi-ld/v1/entities/urn:ngsi-ld:IndoorEnvironmentObserved:A5.18'
+
+
+# --------------------------
+
+### Create Subscription to receive notifications
+curl -iX POST \
+  'http://localhost:1026/ngsi-ld/v1/subscriptions/' \
+  -H 'Content-Type: application/ld+json' \
+  -d '{
+      "id": "urn:ngsi-ld:Subscription:AnyChangeA5.18",
+      "type": "Subscription",
+      "description": "Notify QuantumLeap of count changes of any Sensor",
+      "entities": [
+        {
+            "type": "IndoorEnvironmentObserved",
+            "id": "urn:ngsi-ld:IndoorEnvironmentObserved:A5.18"
+        }
+      ],
+      "watchedAttributes": ["temperature", "relativeHumidity", "co2", "atmosphericPressure"],      
+      "notification": {
+        "attributes": ["temperature", "relativeHumidity", "co2", "atmosphericPressure"],
+        "format": "keyValues",
+        "endpoint": {
+          "uri": "http://quantumleap:8668/v2/notify",
+          "accept": "application/json"
+        }
+      },
+      "throttling": 1,
+      "@context": [
+          "https://smartdatamodels.org/context.jsonld"
+      ]
+    }'
+
+
+### Get all Subscriptions
+curl -X GET \
+  'http://localhost:1026/ngsi-ld/v1/subscriptions'
+
+
+### Get a specific subscriptions
+curl -X GET \
+  'http://localhost:1026/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:AnyChangeA5.18'
+
+
+
+### Delete Subscription
+curl -X DELETE \
+  'http://localhost:1026/ngsi-ld/v1/subscriptions/urn:ngsi-ld:Subscription:AnyChangeA5.18' \
+
+
+
+
+
+### QuantumLeap return an entity values
+GET http://localhost:8668/v2/entities/urn:ngsi-ld:Sensor:F6.22
+
+###
+GET http://localhost:8668/v2/entities/urn:ngsi-ld:Sensor:A5.18
+
+
+### QuantumLeap return First N sampled values
+curl -X GET \
+  'http://localhost:8668/v2/entities/urn:ngsi-ld:Sensor:A5.18/attrs/Temperature_avg?limit=3' \
+  -H 'Accept: application/json'

@@ -1,0 +1,116 @@
+### Check DB-Schemas
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":"SHOW SCHEMAS"}
+
+
+### Check DB-Tables
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":"SHOW TABLES"}
+
+
+### Check DB-Table etindoorenvironmentobserved
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":"SHOW CREATE TABLE etindoorenvironmentobserved"}
+
+
+### Query DB-Tables entries
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":
+"SELECT *, date_format(time_index) FROM etindoorenvironmentobserved ORDER BY time_index DESC LIMIT 100"
+}
+
+
+### Query DB-Tables entries having location
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":
+"SELECT *, date_format(time_index) FROM etindoorenvironmentobserved WHERE location IS NOT NULL ORDER BY time_index DESC LIMIT 100"
+}
+
+
+### Query DB-Tables number of total rows
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":
+"SELECT COUNT(*), date_format(MIN(time_index)), date_format(MAX(time_index)) FROM etindoorenvironmentobserved"
+}
+
+
+### Query DB-Tables available entities
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":
+"SELECT entity_id, COUNT(*), date_format(MIN(time_index)), date_format(MAX(time_index)) FROM etindoorenvironmentobserved GROUP BY entity_id ORDER BY entity_id, MAX(time_index) DESC"
+}
+
+
+### Query for Grafana to display a gauge for the last value of a sensor A5.18
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":
+"SELECT time_index, date_format(time_index), temperature, relativeHumidity, co2, atmosphericpressure FROM etindoorenvironmentobserved WHERE entity_id = 'urn:ngsi-ld:IndoorEnvironmentObserved:A5.18' ORDER BY time_index DESC LIMIT 1"
+}
+
+
+### Query for Grafana to display time-series for the temperature of sensor A5.18
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":
+"SELECT time_index, date_format(time_index), dateobserved, temperature FROM etindoorenvironmentobserved WHERE entity_id = 'urn:ngsi-ld:IndoorEnvironmentObserved:A5.18' ORDER BY time_index DESC"
+}
+
+
+### Query for Grafana to display location of sensor F1.01
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":
+"SELECT replace(entity_id,'urn:ngsi-ld:IndoorEnvironmentObserved:','') as entity_name, latitude(location_centroid) as latitude, longitude(location_centroid) as longitude, location as geohash, * FROM etindoorenvironmentobserved WHERE entity_id = 'urn:ngsi-ld:IndoorEnvironmentObserved:F1.01' AND location IS NOT NULL LIMIT 1"
+}
+
+
+
+### Test a query
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":"SELECT entity_id, time_index, date_format(time_index), temperature, relativeHumidity, co2, atmosphericpressure FROM etindoorenvironmentobserved ORDER BY time_index DESC"}
+
+
+### Test a query, retrieve all columns
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":"SELECT entity_id, * FROM etindoorenvironmentobserved ORDER BY time_index DESC"}
+
+
+### Check IndoorEnvironmentObserved data
+# Notes: time_index contains the same value as dateobserved
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":
+"SELECT entity_id, COUNT(entity_id) AS count, date_format(MIN(time_index)), date_format(MAX(time_index)) FROM etindoorenvironmentobserved GROUP BY entity_id ORDER BY entity_id"
+}
+
+
+### JOIN IndoorEnvironmentObserved with PointOfInterest to get location info
+POST http://localhost:4200/_sql
+Content-Type: application/json
+
+{"stmt":
+"SELECT etindoorenvironmentobserved.entity_id, temperature, location, ST_Y(ST_Transform(etindoorenvironmentobserved.location, 4326)) AS latitude, ST_X(ST_Transform(etindoorenvironmentobserved.location, 4326)) AS longitude FROM etindoorenvironmentobserved JOIN etpointofinterest ON etindoorenvironmentobserved.refpointofinterest=etpointofinterest.entity_id"
+}
